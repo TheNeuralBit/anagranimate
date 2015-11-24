@@ -3,6 +3,11 @@ var w = 500;
 var h = 200;
 var padding = 5;
 var kerning = 10;
+var svg = panel.append('svg:svg')
+            .attr('width', w)
+            .attr('height', h)
+            .style('font-size', '2.2em')
+            .style('font-family', '"PT Serif"');
 var str1 = strParse('the neural bit');
 var str2 = strParse('brian hulette');
 
