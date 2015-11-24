@@ -1,8 +1,8 @@
 var panel = d3.select('#panel')
 var w = 500;
 var h = 200;
-var padding = 5;
-var kerning = 10;
+var padding = 10;
+var kerning = 5;
 var svg = panel.append('svg:svg')
             .attr('width', w)
             .attr('height', h)
@@ -10,6 +10,7 @@ var svg = panel.append('svg:svg')
             .style('font-family', '"PT Serif"');
 var str1 = strParse('the neural bit');
 var str2 = strParse('brian hulette');
+var curr_str = str1;
 
 
 function strParse(str) {
@@ -30,7 +31,8 @@ function strParse(str) {
       c: str[i],
       count: char_count[str[i]],
       cx: curr_x,
-      cy: h/2
+      cy: h/2,
+      radius: 8
     });
     tester.text(str[i] == " " ? "T" : str[i])
           .each(function(d) {
@@ -76,9 +78,42 @@ function gravity(alpha) {
   };
 }
 
+function collide(node) {
+  var r = node.radius + 16,
+      nx1 = node.x - r,
+      nx2 = node.x + r,
+      ny1 = node.y - r,
+      ny2 = node.y + r;
+  return function(quad, x1, y1, x2, y2) {
+    if (quad.point && (quad.point !== node)) {
+      var x = node.x - quad.point.x,
+          y = node.y - quad.point.y,
+          l = Math.sqrt(x * x + y * y),
+          r = node.radius + quad.point.radius;
+      if (l < r) {
+        l = (l - r) / l * .5;
+        node.x -= x *= l;
+        node.y -= y *= l;
+        quad.point.x += x;
+        quad.point.y += y;
+      }
+    }
+    return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
+  };
+}
+
 force.on("tick", function(e) {
   svg.selectAll("text")
-    .each(gravity(.1*e.alpha))
+      .each(gravity(.15*e.alpha))
+      .data();
+
+  var q = d3.geom.quadtree(curr_str),
+      i = 0,
+      n = curr_str.length;
+
+  while (++i < n) q.visit(collide(curr_str[i]));
+
+  svg.selectAll("text")
     .attr("x", function(d) { 
       return d.x;
     })
@@ -105,6 +140,7 @@ function toggle(str) {
     });
   });
   text.data(str, key);
+  curr_str = str;
   force.start();
 }
 
