@@ -10,9 +10,12 @@ var svg = panel.append('svg:svg')
             .style('font-family', '"PT Serif"');
 var str1 = strParse('the neural bit');
 var str2 = strParse('brian hulette');
+var mouse_node = {}
+
 var curr_str = str1;
 
 
+// Turn strings into lists of objects with some additional information
 function strParse(str) {
   var x = d3.scale.ordinal()
         .domain(d3.range(str.length))
@@ -27,6 +30,13 @@ function strParse(str) {
     } else {
       char_count[str[i]] = 0;
     }
+    // These are the objects were listing
+    // c:       the char
+    // count:   # of previous occurrences of this letter (used for the d3 key)
+    // x, y:    initial positions for force layour
+    // cx, cy:  assigned positions for gravity force - letters will be attracted
+    //          here
+    // radius:  used for collision detection
     rtrn.push({
       c: str[i],
       count: char_count[str[i]],
@@ -45,17 +55,19 @@ function strParse(str) {
   return rtrn;
 }
 
+// Use this key for d3 selections, so that when we change out strings we
+// associate corresponding characters in the anagrams correctly
 function key(d) {
   return d.c + d.count;
 }
 
-var curr_x = padding;
+// Create the initial text objects
 var text = svg.selectAll('text')
     .data(str1)
     .enter()
     .append('text')
     .attr('x', function (d, i) {
-      return i * 10;
+      return d.x
     })
     .attr('y', h/2)
     .attr('fill', 'black')
@@ -63,16 +75,35 @@ var text = svg.selectAll('text')
       return d.c;
     });
 
-mouse_pos = {}
-
+// Create force layout
 var force = d3.layout.force()
-  .nodes([mouse_pos].concat(str1))
+  .nodes([mouse_node].concat(str1))
   .links([])
   .gravity(0)
   .size([w, h])
   .charge(0);
 
-// Move nodes toward cluster focus.
+force.on("tick", function(e) {
+  // Attract each node towards its assigned position
+  svg.selectAll('text')
+      .each(gravity(.15*e.alpha))
+      .data();
+
+  // Do collision detection between every node
+  var q = d3.geom.quadtree(curr_str);
+  var i = 0;
+  while (++i < curr_str.length) q.visit(collide(curr_str[i]));
+
+  // Move each character to its assigned position
+  svg.selectAll('text')
+    .attr('x', function(d) { 
+      return d.x;
+    })
+    .attr('y', function(d) { 
+      return d.y;
+    });
+});
+
 function gravity(alpha) {
   return function(d) {
     d.y += (d.cy - d.y) * alpha;
@@ -104,30 +135,37 @@ function collide(node) {
   };
 }
 
-force.on("tick", function(e) {
-  svg.selectAll("text")
-      .each(gravity(.15*e.alpha))
-      .data();
-
-  var q = d3.geom.quadtree(curr_str),
-      i = 0,
-      n = curr_str.length;
-
-  while (++i < n) q.visit(collide(curr_str[i]));
-
-  svg.selectAll("text")
-    .attr("x", function(d) { 
-      return d.x;
-    })
-    .attr("y", function(d) { 
-      return d.y;
-    });
+// Handle mouse event
+// enter: switch between strings using toggle() and turn on charge for node that
+//        follows mouse
+// leave: turn off charge for mouse node
+// move:  move mouse node to actual mouse position
+var active = true;
+svg.on('mouseenter', function() { 
+  if (active) {
+    toggle(str2); 
+  } else {
+    toggle(str1);
+  }
+  force.charge(function(d, i) { return i == 0 ? -1000 : 1; });
+  active = !active;
+  force.start();
 });
 
-force.start();
+svg.on('mouseleave', function() { 
+  console.log('mouseleave');
+  force.charge(0);
+  force.start();
+});
 
+svg.on('mousemove', function() { 
+  var p1 = d3.mouse(this);
+  mouse_node.x = p1[0];
+  mouse_node.y = p1[1];
+  force.resume();
+});
 function toggle(str) {
-  force.nodes([mouse_pos].concat(str));
+  force.nodes([mouse_node].concat(str));
 
   text = svg.selectAll('text');
   old_str = text.data();
@@ -146,33 +184,5 @@ function toggle(str) {
   force.start();
 }
 
-
-
-var active = true;
-svg.on('mouseenter', function() { 
-  console.log(this)
-  console.log('mouseenter');
-  if (active) {
-    console.log('brian hulette')
-    toggle(str2); 
-  } else {
-    console.log('the neural bit')
-    toggle(str1);
-  }
-  force.charge(function(d, i) { return i == 0 ? -1000 : 1; });
-  active = !active;
-  force.start();
-});
-
-svg.on('mouseleave', function() { 
-  console.log('mouseleave');
-  force.charge(0);
-  force.start();
-});
-
-svg.on('mousemove', function() { 
-  var p1 = d3.mouse(this);
-  mouse_pos.x = p1[0];
-  mouse_pos.y = p1[1];
-  force.resume();
-});
+// Start up the force layout once everything is defined
+force.start();
