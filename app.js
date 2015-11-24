@@ -1,7 +1,8 @@
 var panel = d3.select('#panel')
-var w = 300;
-var h = 100;
-var svg = panel.append('svg:svg').attr('width', w).attr('height', h)
+var w = 500;
+var h = 200;
+var padding = 5;
+var kerning = 10;
 var str1 = strParse('the neural bit');
 var str2 = strParse('brian hulette');
 
@@ -12,6 +13,8 @@ function strParse(str) {
         .rangePoints([20, w-20], 1);
   var rtrn = []
   var char_count = {};
+  var tester = svg.append('text')
+  var curr_x = padding;
   for (var i = 0; i < str.length; i++) {
     if (typeof char_count[str[i]] !== 'undefined') {
       char_count[str[i]] += 1;
@@ -21,10 +24,15 @@ function strParse(str) {
     rtrn.push({
       c: str[i],
       count: char_count[str[i]],
-      cx: x(i),
+      cx: curr_x,
       cy: h/2
     });
+    tester.text(str[i] == " " ? "T" : str[i])
+          .each(function(d) {
+            curr_x += this.getBBox().width + kerning;
+          });
   }
+  tester.remove()
   return rtrn;
 }
 
@@ -32,7 +40,8 @@ function key(d) {
   return d.c + d.count;
 }
 
-svg.selectAll('text')
+var curr_x = padding;
+var text = svg.selectAll('text')
     .data(str1)
     .enter()
     .append('text')
