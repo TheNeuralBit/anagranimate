@@ -24,32 +24,40 @@ function strParse(str) {
   var char_count = {};
   var tester = svg.append('text')
   var curr_x = padding;
+  var bbox;
+  var this_object;
   for (var i = 0; i < str.length; i++) {
     if (typeof char_count[str[i]] !== 'undefined') {
       char_count[str[i]] += 1;
     } else {
       char_count[str[i]] = 0;
     }
-    // These are the objects were listing
+    tester.text(str[i] == " " ? "T" : str[i])
+          .each(function(d) {
+            bbox = this.getBBox();
+          });
+ 
+    // These are the objects were adding to the list
     // c:       the char
     // count:   # of previous occurrences of this letter (used for the d3 key)
     // x, y:    initial positions for force layour
     // cx, cy:  assigned positions for gravity force - letters will be attracted
     //          here
     // radius:  used for collision detection
-    rtrn.push({
+    // w, h:    width and height of the letter
+    this_object = {
       c: str[i],
       count: char_count[str[i]],
       x: curr_x,
       y: h/2,
       cx: curr_x,
       cy: h/2,
-      radius: 8
-    });
-    tester.text(str[i] == " " ? "T" : str[i])
-          .each(function(d) {
-            curr_x += this.getBBox().width + kerning;
-          });
+      radius: 8,
+      w: bbox.width,
+      h: bbox.height
+    };
+    rtrn.push(this_object);
+    curr_x += this_object.w + kerning;
   }
   tester.remove()
   return rtrn;
@@ -86,8 +94,7 @@ var force = d3.layout.force()
 force.on("tick", function(e) {
   // Attract each node towards its assigned position
   svg.selectAll('text')
-      .each(gravity(.15*e.alpha))
-      .data();
+      .each(gravity(.15*e.alpha));
 
   // Do collision detection between every node
   var q = d3.geom.quadtree(curr_str);
@@ -97,10 +104,10 @@ force.on("tick", function(e) {
   // Move each character to its assigned position
   svg.selectAll('text')
     .attr('x', function(d) { 
-      return d.x;
+      return Math.max(0, Math.min(w - d.w, d.x));
     })
     .attr('y', function(d) { 
-      return d.y;
+      return Math.max(d.h, Math.min(h, d.y));
     });
 });
 
