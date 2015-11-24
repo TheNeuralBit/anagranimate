@@ -30,6 +30,8 @@ function strParse(str) {
     rtrn.push({
       c: str[i],
       count: char_count[str[i]],
+      x: curr_x,
+      y: h/2,
       cx: curr_x,
       cy: h/2,
       radius: 8
