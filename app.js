@@ -151,35 +151,12 @@ function collide(node) {
   };
 }
 
-// Handle mouse event
+// Handle mouse/touch events
 // enter: switch between strings using toggle() and turn on charge for node that
 //        follows mouse
 // leave: turn off charge for mouse node
 // move:  move mouse node to actual mouse position
 var active = true;
-svg.on('mouseenter', function() { 
-  if (active) {
-    toggle(str2); 
-  } else {
-    toggle(str1);
-  }
-  force.charge(function(d, i) { return i == 0 ? -1000 : 1; });
-  active = !active;
-  force.start();
-});
-
-svg.on('mouseleave', function() { 
-  console.log('mouseleave');
-  force.charge(0);
-  force.start();
-});
-
-svg.on('mousemove', function() { 
-  var p1 = d3.mouse(this);
-  mouse_node.x = p1[0];
-  mouse_node.y = p1[1];
-  force.resume();
-});
 function toggle(str) {
   force.nodes([mouse_node].concat(str));
 
@@ -195,9 +172,42 @@ function toggle(str) {
     });
   });
   text.data(str, key);
+  //circles.data(str, key);
   curr_str = str;
   force.start();
 }
+
+function startmouse() { 
+  if (active) {
+    toggle(str2); 
+  } else {
+    toggle(str1);
+  }
+  force.charge(function(d, i) { return i == 0 ? -1000 : 1; });
+  active = !active;
+  force.start();
+}
+
+function endmouse() { 
+  console.log('mouseleave');
+  force.charge(0);
+  force.start();
+}
+
+function movemouse() { 
+  var p1 = d3.mouse(this);
+  mouse_node.x = p1[0];
+  mouse_node.y = p1[1];
+  force.resume();
+}
+
+svg.on('mouseenter',  startmouse);
+svg.on('touchstart',  startmouse);
+svg.on('mouseleave',  endmouse);
+svg.on('touchend',    endmouse);
+svg.on('touchcancel', endmouse);
+svg.on('mousemove',   movemouse);
+svg.on('touchmove',   movemouse);
 
 // Start up the force layout once everything is defined
 force.start();
