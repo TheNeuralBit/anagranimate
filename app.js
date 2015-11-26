@@ -111,11 +111,11 @@ force.on("tick", function(e) {
   ch = svg.node().getBoundingClientRect().height;
   text
     .attr('x', function(d) { 
-      var x = Math.max(0, Math.min(cw - d.w, d.x));
+      var x = Math.max(d.w/2, Math.min(cw - d.w/2, d.x));
       return x;
     })
     .attr('y', function(d) { 
-      var y = Math.max(d.h, Math.min(ch, d.y));
+      var y = Math.max(d.h/2, Math.min(ch - d.h/2, d.y));
       return y;
     });
 });
