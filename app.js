@@ -2,15 +2,15 @@ var panel = d3.select('#panel')
 var w = 500;
 var h = 200;
 var padding = 10;
-var kerning = 5;
-var svg = panel.append('svg:svg')
-            .attr('width', w)
+var kerning = 0;
+var svg = d3.select('#svg')
+            .style('width', '100%')
             .attr('height', h)
-            .style('font-size', '2.2em')
+            .style('font-size', '2.5em')
             .style('font-family', '"PT Serif"');
 var str1 = strParse('the neural bit');
 var str2 = strParse('brian hulette');
-var mouse_node = {}
+var mouse_node = {};
 
 var curr_str = str1;
 
