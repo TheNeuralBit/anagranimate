@@ -24,19 +24,21 @@ function strParse(str) {
   var char_count = {};
   var tester = svg.append('text')
   var curr_x = padding;
-  var bbox;
-  var this_object;
+  var bbox, this_object, is_space;
   for (var i = 0; i < str.length; i++) {
     if (typeof char_count[str[i]] !== 'undefined') {
       char_count[str[i]] += 1;
     } else {
       char_count[str[i]] = 0;
     }
-    tester.text(str[i] == " " ? "T" : str[i])
+    is_space = str[i] == " "
+    tester.text(is_space ? "T" : str[i])
           .each(function(d) {
             bbox = this.getBBox();
           });
  
+    curr_x += bbox.width/2;
+
     // These are the objects were adding to the list
     // c:       the char
     // count:   # of previous occurrences of this letter (used for the d3 key)
@@ -52,12 +54,12 @@ function strParse(str) {
       y: h/2,
       cx: curr_x,
       cy: h/2,
-      radius: 8,
+      radius: is_space ? 0 : bbox.width/2 - 2,
       w: bbox.width,
       h: bbox.height
     };
     rtrn.push(this_object);
-    curr_x += this_object.w + kerning;
+    curr_x += bbox.width/2;
   }
   tester.remove()
   return rtrn;
@@ -74,10 +76,14 @@ var text = svg.selectAll('text')
     .data(str1)
     .enter()
     .append('text')
+    .attr('text-anchor', 'middle')
+    .attr('alignment-baseline', 'middle')
     .attr('x', function (d, i) {
-      return d.x
+      return d.x - w/2
     })
-    .attr('y', h/2)
+    .attr('y', function(d, i) {
+      return d.y + h/2;
+    })
     .attr('fill', 'black')
     .text(function (d) {
       return d.c;
@@ -93,8 +99,7 @@ var force = d3.layout.force()
 
 force.on("tick", function(e) {
   // Attract each node towards its assigned position
-  svg.selectAll('text')
-      .each(gravity(.15*e.alpha));
+  text.each(gravity(.15*e.alpha));
 
   // Do collision detection between every node
   var q = d3.geom.quadtree(curr_str);
@@ -102,12 +107,16 @@ force.on("tick", function(e) {
   while (++i < curr_str.length) q.visit(collide(curr_str[i]));
 
   // Move each character to its assigned position
-  svg.selectAll('text')
+  cw = svg.node().getBoundingClientRect().width;
+  ch = svg.node().getBoundingClientRect().height;
+  text
     .attr('x', function(d) { 
-      return Math.max(0, Math.min(w - d.w, d.x));
+      var x = Math.max(0, Math.min(cw - d.w, d.x));
+      return x;
     })
     .attr('y', function(d) { 
-      return Math.max(d.h, Math.min(h, d.y));
+      var y = Math.max(d.h, Math.min(ch, d.y));
+      return y;
     });
 });
 
@@ -174,7 +183,6 @@ svg.on('mousemove', function() {
 function toggle(str) {
   force.nodes([mouse_node].concat(str));
 
-  text = svg.selectAll('text');
   old_str = text.data();
   old_str.forEach(function(item) {
     str.forEach(function(other) {
