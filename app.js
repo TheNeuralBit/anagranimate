@@ -3,6 +3,7 @@ var w = 500;
 var h = 200;
 var padding = 10;
 var kerning = 0;
+var trigger_buf = 50;
 var svg = d3.select('#svg')
             .style('width', '100%')
             .attr('height', h)
@@ -88,6 +89,18 @@ var text = svg.selectAll('text')
     .text(function (d) {
       return d.c;
     });
+
+var min_x = d3.min(text.data(), function(d) {return d.x - d.w/2;}) - trigger_buf;
+var max_x = d3.max(text.data(), function(d) {return d.x + d.w/2;}) + trigger_buf;
+var min_y = d3.max(text.data(), function(d) {return d.y - d.h/2;}) - trigger_buf;
+var max_y = d3.max(text.data(), function(d) {return d.y + d.h/2;}) + trigger_buf;
+
+var trigger_rect = svg.append('rect')
+  .attr('x', Math.max(0, min_x))
+  .attr('width', max_x - min_x)
+  .attr('y', Math.max(0, min_y))
+  .attr('height', max_y - min_y)
+  .attr('fill-opacity', '0')
 
 // Create force layout
 var force = d3.layout.force()
@@ -177,14 +190,19 @@ function toggle(str) {
   force.start();
 }
 
-function startmouse() { 
+function do_toggle() {
+  console.log('toggling!');
   if (active) {
     toggle(str2); 
   } else {
     toggle(str1);
   }
-  force.charge(function(d, i) { return i == 0 ? -1000 : 1; });
+}
+
+function startmouse() { 
+  console.log('activating charge!');
   active = !active;
+  force.charge(function(d, i) { return i == 0 ? -1000 : 1; });
   force.start();
 }
 
@@ -201,7 +219,8 @@ function movemouse() {
   force.resume();
 }
 
-svg.on('mouseenter',  startmouse);
+trigger_rect.on('mouseenter', do_toggle);
+svg.on('mouseenter', startmouse);
 svg.on('touchstart',  startmouse);
 svg.on('mouseleave',  endmouse);
 svg.on('touchend',    endmouse);
