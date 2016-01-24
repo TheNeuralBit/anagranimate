@@ -197,11 +197,11 @@ function do_toggle() {
   } else {
     toggle(str1);
   }
+  active = !active;
 }
 
 function startmouse() { 
   console.log('activating charge!');
-  active = !active;
   force.charge(function(d, i) { return i == 0 ? -1000 : 1; });
   force.start();
 }
